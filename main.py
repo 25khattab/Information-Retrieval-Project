@@ -66,35 +66,22 @@ def compute_tfidf(tf,idf):
     return tfidf
 
 def compute_norm(tfidf):
-    sumdic=[]
+    sumdic={}
     for word in tfidf:
-        i=0
-        for value in tfidf[word]:
-            if len(sumdic)<=i:
-                sumdic.append(value*value)
+        for docID in tfidf[word]:
+            if not docID in sumdic:
+                sumdic[docID]=tfidf[word][docID]*tfidf[word][docID]
             else:
-                sumdic[i]=sumdic[i]+(value*value)
-            i=i+1
-    i=0
-    for docId in sumdic:
-        sumdic[i]=math.sqrt(docId)
+                sumdic[docID]=sumdic[docID]+(tfidf[word][docID]*tfidf[word][docID])
+    for docID in sumdic:
+        sumdic[docID]=math.sqrt(sumdic[docID])
+
     ntfidf = tfidf
     for word in ntfidf:
-        i=0
-        for docId in ntfidf[word]:
-            
-            ntfidf[word][i]= ntfidf[word][i]/sumdic[i]
-            i=i+1
+        for docID in ntfidf[word]:  
+            ntfidf[word][docID]= ntfidf[word][docID]/sumdic[docID]
     return ntfidf
 
-def display(d,n):
-    print(n+'\n')
-    for k in d:
-        print("{:<15}".format(k),end=" ")
-        for x in d[k]:
-            print("{:<10}".format(x),end=" ")
-        print()
-    print("\n")
 def find_inter(word,matches,dic):
     ans={}
     for docid in matches:
@@ -120,39 +107,64 @@ def find_inter(word,matches,dic):
                     i2=i2+1
     return ans
 
+def compute_COSINE_SIM(matched,nor,q):
+    result={}
+    for word in q:
+        for docID in matched:
+            if not docID in result:
+                result[docID]=nor[word][docID]
+            else:
+                result[docID]=result[docID]+nor[word][docID]
+    return result   
+
+def display_Rank(result):
+    result = sorted(result.items(), key=lambda x: x[1], reverse=True)
+    result=dict(result)
+    print("Query Result based on cosine similarity")
+    print("docID :",end="")
+    for key in result.keys() :
+        print ("{:>6}".format(key) ,end='')
+    print()
+
+def display(ret,label):
+    df=ret
+    if len(df.iloc[0])==1:
+        new_header = df.iloc[0]
+        df = df[1:]
+        df.columns = new_header
+    print(label)
+    print(df)
+    print()
 
 make_token_files()
 
 dic={}
 dic=createPositionalIndex()
 tf,df,idf=compute_TF_DF_IDF(dic)
-
 tfidf=compute_tfidf(tf,idf)
+nor=compute_norm(tfidf)
 
-print(pd.DataFrame.from_dict(tf).T)
-print()
-print(pd.DataFrame.from_dict(df).T)
-print()
-print(pd.DataFrame.from_dict(idf).T)
-print()
-print(pd.DataFrame.from_dict(tfidf).T)
-#nor=compute_norm(tfidf)
-#print(nor)
-
+########################################################
+#printing matrices
+display(pd.DataFrame.from_dict(tf).T,"TF :")
+display(pd.DataFrame.from_dict(df).T,"DF :")
+display(pd.DataFrame.from_dict(idf).T,"IDF :")
+display(pd.DataFrame.from_dict(tfidf).T,"TF-IDF :")
+display(pd.DataFrame.from_dict(nor).T,"Normalized Values :")
 
 #antony brutus caeser
 
-# while True:
-#     q = [a for a in input().lower().split(' ') if a != ""]  #remove stop wordssss
-#     matches = []
-#     if len(q) == 1 and q[0] == '/exit':
-#         exit()
-#     for id,word in enumerate(q):
-#         if id==0:
-#             matches=dic[word]
-#         else:
-#             matches=find_inter(word,matches,dic)
-#     print("docID : ",end=" ")
-#     for key, value in matches.items() :
-#         print (key ,end=' ')
-#     print()   
+while True:
+    q = [a for a in input().lower().split(' ') if a != ""]  #remove stop wordssss
+    matches = []
+    if len(q) == 1 and q[0] == '/exit':
+        exit()
+    for id,word in enumerate(q):
+        if id==0:
+            matches=dic[word]
+        else:
+            matches=find_inter(word,matches,dic)
+    cos=compute_COSINE_SIM(matches,nor,q)
+    display(pd.DataFrame([cos]).T,"COSINE SIMILARITY :")
+    display_Rank(cos)
+    
