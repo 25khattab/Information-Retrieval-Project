@@ -106,18 +106,42 @@ def find_inter(word,matches,dic):
                     i2=i2+1
     return ans
 
-def compute_COSINE_SIM(matched,nor,q):
+def compute_COSINE_SIM(matched,qntfidf,nor,q):
     result={}
     for word in q:
         for docID in matched:
             if not docID in result:
-                result[docID]=nor[word][docID]
+                result[docID]=nor[word][docID]*qntfidf[word][docID]
             else:
-                result[docID]=result[docID]+nor[word][docID]
+                result[docID]=result[docID]+nor[word][docID]*qntfidf[word][docID]
     return result   
 
+def compute_qntfidf(matched,tfidf,q):
+    qntfidf={}
+    for word in q:
+        if not word in tfidf : continue
+        if not word in qntfidf:
+            qntfidf[word]={}
+        for docID in matched:
+            qntfidf[word][docID]=tfidf[word][docID]
+    qsum={}
+    for word in q:
+        for docID in qntfidf[word]:
+            if not docID in qsum:
+                qsum[docID]=qntfidf[word][docID]*qntfidf[word][docID]
+            else :
+                qsum[docID]=qsum[docID]+(qntfidf[word][docID]*qntfidf[word][docID])
+    for docID in qsum:
+        qsum[docID]=math.sqrt(qsum[docID])
+    for word in qntfidf:
+        for docID in qntfidf[word]:
+            qntfidf[word][docID]=qntfidf[word][docID]/qsum[docID]
+
+    return qntfidf
+
+
 def display_Rank(result):
-    result = sorted(result.items(), key=lambda x: x[1], reverse=True)
+    result = sorted(result.items(), key=lambda x: x[1])
     result=dict(result)
     print("Query Result based on cosine similarity")
     print("docID :",end="")
@@ -166,8 +190,12 @@ while True:
                 matches=dic[word]
         else:
             matches=find_inter(word,matches,dic)
+
+    
     if len(matches):
-        cos=compute_COSINE_SIM(matches,nor,q)
+        qntfidf={}
+        qntfidf=compute_qntfidf(matches,tfidf,q)
+        cos=compute_COSINE_SIM(matches,qntfidf,nor,q)
         display(pd.DataFrame([cos]).T,"COSINE SIMILARITY :")
         display_Rank(cos)
     else:
