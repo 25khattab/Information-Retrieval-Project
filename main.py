@@ -165,9 +165,10 @@ while True:
                 matches=dic[word]
         else:
             matches=find_inter(word,matches,dic)
-    print(matches)
     if len(matches):
         cos=compute_COSINE_SIM(matches,nor,q)
         display(pd.DataFrame([cos]).T,"COSINE SIMILARITY :")
         display_Rank(cos)
+    else:
+        print("no match try again...")
     
