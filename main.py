@@ -161,10 +161,13 @@ while True:
         exit()
     for id,word in enumerate(q):
         if id==0:
-            matches=dic[word]
+            if word in dic:
+                matches=dic[word]
         else:
             matches=find_inter(word,matches,dic)
-    cos=compute_COSINE_SIM(matches,nor,q)
-    display(pd.DataFrame([cos]).T,"COSINE SIMILARITY :")
-    display_Rank(cos)
+    print(matches)
+    if len(matches):
+        cos=compute_COSINE_SIM(matches,nor,q)
+        display(pd.DataFrame([cos]).T,"COSINE SIMILARITY :")
+        display_Rank(cos)
     
