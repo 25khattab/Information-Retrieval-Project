@@ -6,7 +6,7 @@ from nltk.corpus import stopwords
 import pandas as pd
 
 haha="?-/(){}[].,~!@#$%^&*\'\":"
-
+# omar ? 3 he its s
 def make_token_files():
     for file in os.listdir("files"):
             file_path = os.path.abspath("files/"+file)
@@ -31,8 +31,7 @@ def createPositionalIndex():
                 if not word in index:
                     index[word]={}
                     index[word][docID]= [idx]
-                else: 
-                    
+                else:  
                     if not docID in index[word]:
                         index[word][docID]=[idx]
                     else:
@@ -42,7 +41,6 @@ def createPositionalIndex():
 def compute_TF_DF_IDF(index):
     tf={}
     df={}
-    
     idf={}
     for word in index:
         tf[word]={}
@@ -50,7 +48,7 @@ def compute_TF_DF_IDF(index):
         for file in os.listdir("token_files"):
             docID=os.path.basename(file).split('.')[0]
             df[word]=[len(index[word])]
-            idf[word]=[numpy.log10(10/(df[word][0]+1))]            #change 10 to make it generic
+            idf[word]=[numpy.log10(len(os.listdir("files"))/(df[word][0]+1))]            #change 10 to make it generic
             if docID in index[word].keys():
                 tf[word][docID]=len(index[word][docID])
             else:
@@ -75,11 +73,12 @@ def compute_norm(tfidf):
                 sumdic[docID]=sumdic[docID]+(tfidf[word][docID]*tfidf[word][docID])
     for docID in sumdic:
         sumdic[docID]=math.sqrt(sumdic[docID])
-
-    ntfidf = tfidf
-    for word in ntfidf:
-        for docID in ntfidf[word]:  
-            ntfidf[word][docID]= ntfidf[word][docID]/sumdic[docID]
+    ntfidf = {}
+    for word in tfidf:
+        ntfidf[word]={}
+        for docID in tfidf[word]: 
+            ntfidf[word][docID]= tfidf[word][docID]/sumdic[docID]
+    
     return ntfidf
 
 def find_inter(word,matches,dic):
@@ -136,10 +135,11 @@ def display(ret,label):
     print(df)
     print()
 
-make_token_files()
+#make_token_files()
 
 dic={}
 dic=createPositionalIndex()
+#display(pd.DataFrame.from_dict(dic).T,"dic : ")
 tf,df,idf=compute_TF_DF_IDF(dic)
 tfidf=compute_tfidf(tf,idf)
 nor=compute_norm(tfidf)
@@ -152,10 +152,11 @@ display(pd.DataFrame.from_dict(idf).T,"IDF :")
 display(pd.DataFrame.from_dict(tfidf).T,"TF-IDF :")
 display(pd.DataFrame.from_dict(nor).T,"Normalized Values :")
 
+
 #antony brutus caeser
 
 while True:
-    q = [a for a in input().lower().split(' ') if a != ""]  #remove stop wordssss
+    q = [a for a in input().lower().split(' ') if a != ""]  #remove stop wordssss and haha
     matches = []
     if len(q) == 1 and q[0] == '/exit':
         exit()
