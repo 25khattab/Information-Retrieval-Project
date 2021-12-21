@@ -1,12 +1,14 @@
 import os,numpy,math
-from nltk.corpus.reader.rte import norm
-from re import match
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import pandas as pd
 
 haha="?-/(){}[].,~!@#$%^&*\'\":"
 # omar ? 3 he its s
+
+nonStopWords = ['where','to','in']
+stopWords = [word for word in stopwords.words() if not word in nonStopWords] 
+
 def make_token_files():
     for file in os.listdir("files"):
             file_path = os.path.abspath("files/"+file)
@@ -14,10 +16,11 @@ def make_token_files():
                 with open(os.path.abspath("token_files/"+file),'w') as out_file:  #ATTENTION
                     for line in in_file:
                         t = word_tokenize(line)
-                        tokens_without_sw = [word for word in t if not word in stopwords.words()]
+                        tokens = [word.lower() for word in t]
+                        tokens_without_sw = [word for word in tokens if not word in stopWords]
                         tokens_without_s = [word for word in tokens_without_sw if not word in haha ]
                         for word in tokens_without_s:
-                            out_file.write(word.lower())
+                            out_file.write(word)
                             out_file.write("\n")
 
 def createPositionalIndex():
@@ -38,29 +41,33 @@ def createPositionalIndex():
                         index[word][docID].append(idx)
     return index
 
-def compute_TF_DF_IDF(index):
+def compute_TF_WTF_DF_IDF(index):
     tf={}
+    wtf={}
     df={}
     idf={}
     for word in index:
         tf[word]={}
-        
+        wtf[word]={}
         for file in os.listdir("token_files"):
             docID=os.path.basename(file).split('.')[0]
             df[word]=[len(index[word])]
-            idf[word]=[numpy.log10(len(os.listdir("files"))/(df[word][0]+1))]            #change 10 to make it generic
+            idf[word]=[numpy.log10(len(os.listdir("files"))/(df[word][0]))]            #change 10 to make it generic
             if docID in index[word].keys():
                 tf[word][docID]=len(index[word][docID])
+                wtf[word][docID]=numpy.log(tf[word][docID])+1
             else:
                 tf[word][docID]=0
-    return tf,df,idf      
+                wtf[word][docID]=0
+    return tf,wtf,df,idf      
 
-def compute_tfidf(tf,idf):
+def compute_tfidf(wtf,idf):
     tfidf={}
     for word in tf:
         tfidf[word]={}
         for docID in tf[word]:
-            tfidf[word][docID]=round((numpy.log(tf[word][docID]+1))*idf[word][0],2)
+            tfidf[word][docID]=wtf[word][docID]*idf[word][0]
+            
     return tfidf
 
 def compute_norm(tfidf):
@@ -68,18 +75,17 @@ def compute_norm(tfidf):
     for word in tfidf:
         for docID in tfidf[word]:
             if not docID in sumdic:
-                sumdic[docID]=tfidf[word][docID]*tfidf[word][docID]
+                sumdic[docID]=[pow(tfidf[word][docID],2)]
             else:
-                sumdic[docID]=sumdic[docID]+(tfidf[word][docID]*tfidf[word][docID])
+                sumdic[docID][0]=sumdic[docID][0]+pow(tfidf[word][docID],2)
     for docID in sumdic:
-        sumdic[docID]=math.sqrt(sumdic[docID])
+        sumdic[docID]=[math.sqrt(sumdic[docID][0])]
     ntfidf = {}
     for word in tfidf:
         ntfidf[word]={}
         for docID in tfidf[word]: 
-            ntfidf[word][docID]= tfidf[word][docID]/sumdic[docID]
-    
-    return ntfidf
+            ntfidf[word][docID]= tfidf[word][docID]/sumdic[docID][0]
+    return ntfidf,sumdic
 
 def find_inter(word,matches,dic):
     ans={}
@@ -159,21 +165,23 @@ def display(ret,label):
     print(df)
     print()
 
-#make_token_files()
+make_token_files()
 
 dic={}
 dic=createPositionalIndex()
 #display(pd.DataFrame.from_dict(dic).T,"dic : ")
-tf,df,idf=compute_TF_DF_IDF(dic)
+tf,wtf,df,idf=compute_TF_WTF_DF_IDF(dic)
 tfidf=compute_tfidf(tf,idf)
-nor=compute_norm(tfidf)
+nor,sumdic=compute_norm(tfidf)
 
 ########################################################
 #printing matrices
 display(pd.DataFrame.from_dict(tf).T,"TF :")
+display(pd.DataFrame.from_dict(wtf).T,"WTF :")
 display(pd.DataFrame.from_dict(df).T,"DF :")
 display(pd.DataFrame.from_dict(idf).T,"IDF :")
 display(pd.DataFrame.from_dict(tfidf).T,"TF-IDF :")
+display(pd.DataFrame.from_dict(sumdic).T,"Doc Length :")
 display(pd.DataFrame.from_dict(nor).T,"Normalized Values :")
 
 
