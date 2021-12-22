@@ -2,12 +2,12 @@ import os,numpy,math
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import pandas as pd
+from sys import exit
 
-haha="?-/(){}[].,~!@#$%^&*\'\":"
-# omar ? 3 he its s
 
 nonStopWords = ['where','to','in']
 stopWords = [word for word in stopwords.words() if not word in nonStopWords] 
+stopWords.extend([',','\'','"',':','.','?','!','&','^','/','(',')','{','}','[',']',';','//','@','#','$','%','*','-','|','<','>','`','~'])
 
 def make_token_files():
     for file in os.listdir("files"):
@@ -18,8 +18,7 @@ def make_token_files():
                         t = word_tokenize(line)
                         tokens = [word.lower() for word in t]
                         tokens_without_sw = [word for word in tokens if not word in stopWords]
-                        tokens_without_s = [word for word in tokens_without_sw if not word in haha ]
-                        for word in tokens_without_s:
+                        for word in tokens_without_sw:
                             out_file.write(word)
                             out_file.write("\n")
 
@@ -90,6 +89,8 @@ def compute_norm(tfidf):
 def find_inter(word,matches,dic):
     ans={}
     for docid in matches:
+        if not word in dic:
+            return {}
         if docid in dic[word]:
             l1=matches[docid]
             l2=dic[word][docid]
@@ -188,11 +189,13 @@ display(pd.DataFrame.from_dict(nor).T,"Normalized Values :")
 #antony brutus caeser
 
 while True:
-    q = [a for a in input().lower().split(' ') if a != ""]  #remove stop wordssss and haha
-    matches = []
-    if len(q) == 1 and q[0] == '/exit':
+    q = input()
+    if(q=='/exit'):
         exit()
-    for id,word in enumerate(q):
+    q=word_tokenize(q)
+    q_without_sw = [word for word in q if not word in stopWords]
+    matches = []
+    for id,word in enumerate(q_without_sw):
         if id==0:
             if word in dic:
                 matches=dic[word]
@@ -202,8 +205,8 @@ while True:
     
     if len(matches):
         qntfidf={}
-        qntfidf=compute_qntfidf(matches,tfidf,q)
-        cos=compute_COSINE_SIM(matches,qntfidf,nor,q)
+        qntfidf=compute_qntfidf(matches,tfidf,q_without_sw)
+        cos=compute_COSINE_SIM(matches,qntfidf,nor,q_without_sw)
         display(pd.DataFrame([cos]).T,"COSINE SIMILARITY :")
         display_Rank(cos)
     else:
